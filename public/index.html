@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Interactive Live Studio - V11 (Living Shrine & Visible Offerings)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background-color: #090d16; color: white; font-family: sans-serif; }
+        .live-canvas {
+            width: 360px;
+            height: 640px;
+            background: #1c0f06;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #f59e0b;
+            border-radius: 16px;
+            box-shadow: 0 0 45px rgba(245, 158, 11, 0.35);
+        }
+        /* အပေါ်ပိုင်း ဘုရားစင် Box */
+        .shrine-photo-box {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 55%;
+            overflow: hidden;
+            z-index: 0;
+            background: radial-gradient(circle at center, #78350f 0%, #1c0f06 100%);
+        }
+        /* ဘုရားဓာတ်ပုံကို အသေမဖြစ်စေဘဲ ဖြည်းညင်းစွာ လှုပ်ရှားနေစေမည့် Ken Burns Animation */
+        @keyframes shrineBreathe {
+            0%, 100% { transform: scale(1) translateY(0px); }
+            50% { transform: scale(1.07) translateY(-5px); }
+        }
+        #bgImage {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            animation: shrineBreathe 14s ease-in-out infinite;
+        }
+        #bgVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* ဘုရားနောက်ခံ ရောင်ခြည်တော် အလင်းတန်း လည်ပတ်မှု */
+        @keyframes spinHalo {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .divine-rays {
+            position: absolute;
+            top: 46%;
+            left: 50%;
+            width: 420px;
+            height: 420px;
+            background: repeating-conic-gradient(
+                from 0deg,
+                rgba(254, 240, 138, 0.16) 0deg 8deg,
+                transparent 8deg 20deg
+            );
+            border-radius: 50%;
+            pointer-events: none;
+            animation: spinHalo 45s linear infinite;
+            mix-blend-mode: screen;
+        }
+        /* ရွှေမှုန်လေးများ ပျံဝဲမှု */
+        @keyframes floatGoldDust {
+            0% { transform: translateY(0) scale(0.6); opacity: 0; }
+            40% { opacity: 0.95; }
+            100% { transform: translateY(-220px) scale(1.2); opacity: 0; }
+        }
+        .gold-particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: #fef08a;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #f59e0b;
+            pointer-events: none;
+            animation: floatGoldDust 6s linear infinite;
+        }
+        /* အမွှေးတိုင် အငွေ့လှုပ်ခတ်မှု */
+        @keyframes incenseRise {
+            0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0.5; }
+            50% { transform: translateY(-45px) translateX(6px) scale(1.2); opacity: 0.3; }
+            100% { transform: translateY(-95px) translateX(-4px) scale(1.6); opacity: 0; }
+        }
+        .incense-smoke {
+            position: absolute;
+            bottom: 18px;
+            width: 14px; height: 14px;
+            background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: incenseRise 4s ease-out infinite;
+        }
+
+        /* ဘုရားစင် ရွှေပလ္လင်ဘောင် (ပန်းအိုးနှင့် ဆီမီးများ အထင်အရှား ပြသရာနေရာ) */
+        .shrine-ledge {
+            position: absolute;
+            top: 50%;
+            left: 0; right: 0;
+            height: 36px;
+            background: linear-gradient(180deg, #fde047 0%, #d97706 45%, #78350f 100%);
+            border-top: 2px solid #fef9c3;
+            border-bottom: 3px solid #451a03;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.9);
+            z-index: 15;
+        }
+        /* ဆီမီးတောက် လှုပ်ခတ်မှု */
+        @keyframes candleFlicker {
+            0%, 100% { transform: scale(1) rotate(-2deg); filter: drop-shadow(0 0 6px #fbbf24); }
+            50% { transform: scale(1.18) rotate(2deg); filter: drop-shadow(0 0 12px #fef08a); }
+        }
+        .lit-candle {
+            display: inline-block;
+            animation: candleFlicker 0.8s ease-in-out infinite;
+        }
+        /* ပန်းပွင့် ဖူးပွင့်လာမှု */
+        @keyframes flowerBloom {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        .bloomed-flower {
+            display: inline-block;
+            animation: flowerBloom 0.5s ease-out forwards;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+        }
+
+        /* အပေါ်မှ နှင်းဆီပန်းပွင့်ဖတ်များ ကြွေကျမှု */
+        @keyframes petalFall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(340px) rotate(360deg); opacity: 0; }
+        }
+        .falling-petal {
+            position: absolute;
+            top: 0;
+            font-size: 16px;
+            pointer-events: none;
+            z-index: 40;
+            animation: petalFall 3s linear forwards;
+        }
+
+        /* အောက်ပိုင်း 3D ကြမ်းပြင် */
+        .temple-floor-3d {
+            position: absolute;
+            top: 55%; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, #4a2511 0%, #7c3f1d 35%, #5c2c12 100%);
+            z-index: 1;
+            overflow: hidden;
+        }
+        .floor-grid {
+            position: absolute; inset: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 2px, transparent 2px, transparent 28px),
+                repeating-linear-gradient(90deg, rgba(251,191,36,0.08) 0px, rgba(251,191,36,0.08) 1px, transparent 1px, transparent 45px);
+            transform: perspective(260px) rotateX(48deg);
+            transform-origin: top center;
+        }
+        .center-carpet {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 86px;
+            transform: translateX(-50%) perspective(260px) rotateX(48deg);
+            transform-origin: top center;
+            background: linear-gradient(90deg, #f59e0b 0%, #991b1b 10%, #b91c1c 50%, #991b1b 90%, #f59e0b 100%);
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+        }
+
+        @keyframes slideBannerIn {
+            0% { transform: translateX(-100%) scale(0.95); opacity: 0; }
+            100% { transform: translateX(0) scale(1); opacity: 1; }
+        }
+        .gift-banner-item {
+            animation: slideBannerIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            background: linear-gradient(90deg, rgba(35, 16, 4, 0.92) 0%, rgba(75, 38, 8, 0.95) 50%, rgba(35, 16, 4, 0.92) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.65);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.75);
+        }
+
+        .person-actor {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            transition: left 2.5s linear, top 2.5s linear, transform 0.3s ease;
+            will-change: left, top;
+        }
+        @keyframes walkStep {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-3px) rotate(2deg); }
+        }
+        .is-walking .actor-sprite { animation: walkStep 0.4s ease-in-out infinite; }
+
+        @keyframes sitPray {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.97); }
+        }
+        .is-praying .actor-sprite { animation: sitPray 3s ease-in-out infinite; }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row items-center justify-center min-h-screen gap-6 p-4">
+
+    <!-- ဘယ်ဘက်ခြမ်း: Live လွှင့်မည့် 9:16 Screen -->
+    <div class="live-canvas flex flex-col justify-between" id="liveScreen">
+        
+        <!-- 1. အပေါ်ပိုင်း ဘုရားစင် + လှုပ်ရှားနေသည့် ရောင်ခြည်တော်နှင့် ရွှေမှုန်များ -->
+        <div class="shrine-photo-box" id="shrineBox">
+            <img id="bgImage" src="bg1.jpg" onerror="this.style.display='none'" alt="">
+            <video id="bgVideo" class="hidden" autoplay loop muted playsinline></video>
+            <!-- လည်ပတ်နေသော ရောင်ခြည်တော် -->
+            <div class="divine-rays"></div>
+            <!-- အမွှေးတိုင် အငွေ့များ -->
+            <div class="incense-smoke" style="left: 48%; animation-delay: 0s;"></div>
+            <div class="incense-smoke" style="left: 51%; animation-delay: 1.8s;"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/30 pointer-events-none"></div>
+        </div>
+
+        <!-- 2. ဘုရားစင် ရွှေပလ္လင်ဘောင် (ပန်းလှူ/ဆီမီးပူဇော်မှုများ အထင်အရှား မြင်ရမည့် စင်တန်း) -->
+        <div class="shrine-ledge flex items-center justify-between px-2">
+            <!-- ဘယ်ဘက် ပန်းအိုးစင် (Rose ပို့လေ ပန်းပွင့်များ တိုးပွားလာမည်) -->
+            <div class="flex items-center bg-black/45 px-1.5 py-0.5 rounded-full border border-pink-400/50">
+                <span class="text-sm mr-0.5">🏺</span>
+                <div id="leftFlowerVase" class="flex -space-x-1 text-sm">
+                    <span class="bloomed-flower">🌸</span>
+                </div>
+            </div>
+
+            <!-- အလယ် ဆီမီးခုံတန်း (Gift ပို့လေ ဆီမီးတောက်များ လင်းထိန်လာမည်) -->
+            <div id="centerCandleRow" class="flex items-center justify-center gap-0.5 bg-black/50 px-2 py-0.5 rounded-full border border-amber-300/60 min-w-[95px] text-sm">
+                <span class="lit-candle">🕯️</span>
+            </div>
+
+            <!-- ညာဘက် ပန်းအိုးစင် -->
+            <div class="flex items-center bg-black/45 px-1.5 py-0.5 rounded-full border border-pink-400/50">
+                <div id="rightFlowerVase" class="flex -space-x-1 text-sm">
+                    <span class="bloomed-flower">🌸</span>
+                </div>
+                <span class="text-sm ml-0.5">🏺</span>
+            </div>
+        </div>
+
+        <!-- 3. အောက်ပိုင်း 3D ကြမ်းပြင်နှင့် အလယ်ကော်ဇောနီ -->
+        <div class="temple-floor-3d">
+            <div class="floor-grid"></div>
+            <div class="center-carpet"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none"></div>
+        </div>
+
+        <!-- 4. အပေါ်ဆုံး: ခေါင်းစဉ်နှင့် တကယ် Gift ပေးမှ တက်လာမည့် Banner များ -->
+        <div class="relative z-30 pt-3 px-2.5 space-y-1.5">
+            <div class="text-center">
+                <span id="displayTitle" class="inline-block bg-black/60 backdrop-blur-sm border border-amber-400/50 px-3.5 py-1 rounded-full text-[13px] font-extrabold text-amber-200 shadow">
+                    🙏 မနက်ခင်းတရားတော် 🙏
+                </span>
+            </div>
+            <div id="topBannersContainer" class="space-y-1.5"></div>
+        </div>
+
+        <!-- 5. ကြမ်းပြင်ပေါ်တွင် ထိုင်/လျှောက် ပူဇော်နေသည့် လူများ -->
+        <div id="templeStage" class="absolute inset-0 z-20 pointer-events-none"></div>
+
+        <!-- 6. အောက်ခြေ ကုသိုလ်ပြ ဘားတန်း -->
+        <div class="relative z-30 px-3 pb-2 flex justify-between items-center text-[10px] text-amber-100 pointer-events-none">
+            <span class="bg-black/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-400/40">🌹 ပန်းလှူ: <b id="flowerCount" class="text-pink-300">0</b></span>
+            <span class="bg-black/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-400/40">🕯️ ဆီမီး: <b id="candleCount" class="text-amber-300">0</b></span>
+        </div>
+    </div>
+
+    <!-- ညာဘက်ခြမ်း: Control & Setting Panel -->
+    <div class="w-full max-w-md bg-slate-800/95 backdrop-blur-lg p-5 rounded-2xl border border-slate-700 space-y-3.5 max-h-[95vh] overflow-y-auto">
+        <h2 class="text-base font-bold text-amber-400 flex items-center justify-between">
+            <span>⚙️ Live Control & Settings</span>
+            <span class="text-[11px] text-emerald-400 font-normal">V11 Living Shrine</span>
+        </h2>
+        
+        <!-- 1. TikTok Connect -->
+        <div>
+            <label class="block text-xs text-slate-300 mb-1">၁။ TikTok Username ထည့်ပါ</label>
+            <div class="flex gap-2">
+                <input type="text" id="usernameInput" placeholder="ဥပမာ: @myanmarglobalnews" class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-amber-400">
+                <button onclick="connectTikTok()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-sm">ချိတ်ဆက်မည်</button>
+            </div>
+            <p id="statusText" class="text-[11px] mt-1 text-slate-400">အခြေအနေ: မချိတ်ဆက်ရသေးပါ</p>
+        </div>
+
+        <hr class="border-slate-700">
+
+        <!-- 2. Pagoda Photos & Animation Speed -->
+        <div>
+            <label class="block text-xs text-amber-300 font-bold mb-1.5">၂။ ဘုရား/စေတီ ဓာတ်ပုံအစစ် (၅) မျိုး (bg1.jpg ~ bg5.jpg)</label>
+            <div class="grid grid-cols-5 gap-1.5">
+                <button onclick="selectLocalPagoda(1)" id="sceneBtn1" class="scene-btn bg-amber-500 text-slate-950 font-bold py-1.5 px-1 rounded-lg text-[10px] border border-amber-300 flex flex-col items-center">
+                    <span class="text-sm">🛕</span><span>ပုံ (၁)</span>
+                </button>
+                <button onclick="selectLocalPagoda(2)" id="sceneBtn2" class="scene-btn bg-slate-900 hover:bg-slate-700 text-slate-200 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🙏</span><span>ပုံ (၂)</span>
+                </button>
+                <button onclick="selectLocalPagoda(3)" id="sceneBtn3" class="scene-btn bg-slate-900 hover:bg-slate-700 text-slate-200 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🏛️</span><span>ပုံ (၃)</span>
+                </button>
+                <button onclick="selectLocalPagoda(4)" id="sceneBtn4" class="scene-btn bg-slate-900 hover:bg-slate-700 text-slate-200 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">✨</span><span>ပုံ (၄)</span>
+                </button>
+                <button onclick="selectLocalPagoda(5)" id="sceneBtn5" class="scene-btn bg-slate-900 hover:bg-slate-700 text-slate-200 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🕯️</span><span>ပုံ (၅)</span>
+                </button>
+            </div>
+            <label class="block text-[11px] text-slate-300 mt-2 mb-1">သို့မဟုတ် ကိုယ့်ကွန်ပျူတာထဲမှ ဘုရားဓာတ်ပုံ/ဗီဒီယို တိုက်ရိုက်ရွေးထည့်ရန်</label>
+            <input type="file" id="bgUpload" accept="image/*,video/*" onchange="changeBackground(event)" class="w-full text-[11px] text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-purple-600 file:text-white bg-slate-900 rounded border border-slate-700 p-1">
+        </div>
+
+        <hr class="border-slate-700">
+
+        <!-- 3. Built-in Background Sounds & Custom Audio -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="text-xs text-emerald-300 font-bold">၃။ နောက်ခံအသံ (၅ မျိုး တန်းသုံးနိုင်သည်)</label>
+                <button onclick="stopAllAudio()" class="text-[11px] bg-rose-600/80 hover:bg-rose-600 px-2 py-0.5 rounded text-white">🔇 အသံပိတ်မည်</button>
+            </div>
+            
+            <div class="grid grid-cols-5 gap-1.5">
+                <button onclick="playPresetAudio(1)" id="audBtn1" class="aud-btn bg-slate-900 hover:bg-slate-700 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🔔</span><span>ကြေးစည်သံ</span>
+                </button>
+                <button onclick="playPresetAudio(2)" id="audBtn2" class="aud-btn bg-slate-900 hover:bg-slate-700 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🧘</span><span>တရားတေး</span>
+                </button>
+                <button onclick="playPresetAudio(3)" id="audBtn3" class="aud-btn bg-slate-900 hover:bg-slate-700 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🌊</span><span>ရေစီးသံ</span>
+                </button>
+                <button onclick="playPresetAudio(4)" id="audBtn4" class="aud-btn bg-slate-900 hover:bg-slate-700 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🎶</span><span>စောင်းသံ</span>
+                </button>
+                <button onclick="playPresetAudio(5)" id="audBtn5" class="aud-btn bg-slate-900 hover:bg-slate-700 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center">
+                    <span class="text-sm">🕉️</span><span>ပရိတ်ဂီတ</span>
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-[11px] text-slate-300 mb-1">သို့မဟုတ် အပြင်က တရားတော်/MP3 အသံဖိုင် ထည့်ဖွင့်ရန်</label>
+                <input type="file" id="audioUpload" accept="audio/*" onchange="uploadCustomAudio(event)" class="w-full text-[11px] text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-emerald-600 file:text-white bg-slate-900 rounded border border-slate-700 p-1">
+                <audio id="customAudioPlayer" controls loop class="w-full h-8 mt-1.5 hidden"></audio>
+            </div>
+
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+                <span>🔊 အသံအတိုးအကျယ်:</span>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5" oninput="updateVolume(this.value)" class="flex-1 accent-amber-400">
+            </div>
+        </div>
+
+        <hr class="border-slate-700">
+
+        <!-- 4. Custom Title & Test Mode -->
+        <div>
+            <label class="block text-xs text-slate-300 mb-1">၄။ ခေါင်းစဉ် ပြောင်းရန်</label>
+            <input type="text" id="titleInput" value="🙏 မနက်ခင်းတရားတော် 🙏" oninput="document.getElementById('displayTitle').innerText = this.value" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-sm">
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-1.5">
+                <label class="text-xs text-slate-300">🧪 စမ်းသပ်ခလုတ်များ (ပန်းလှူ/ဆီမီးပူဇော်ပုံ စမ်းရန်)</label>
+                <button onclick="resetAll()" class="text-[11px] text-amber-400 hover:underline">အားလုံး Reset ချမည်</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="simulateGift('အောင်အောင်', 'Rose', 1)" class="bg-pink-600 hover:bg-pink-700 py-2 rounded-lg text-xs font-bold">🌹 ပန်းလှူစမ်းမည်</button>
+                <button onclick="simulateGift('မသီတာ', 'TikTok', 3)" class="bg-amber-600 hover:bg-amber-700 py-2 rounded-lg text-xs font-bold">🕯️ ဆီမီးပူဇော်မည်</button>
+                <button onclick="simulateChat('ဦးဝင်း', 'သာဓု သာဓု')" class="bg-emerald-600 hover:bg-emerald-700 py-2 rounded-lg text-xs font-bold">🙏 သာဓုခေါ်မည်</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = (typeof io !== 'undefined') ? io() : null;
+        let flowers = 0;
+        let candles = 0;
+
+        // ဘုရားစင်ပေါ်တွင် ရွှေမှုန်လေးများ အမြဲပျံဝဲနေစေရန် ဖန်တီးခြင်း
+        const shrineBox = document.getElementById('shrineBox');
+        for (let i = 0; i < 22; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'gold-particle';
+            dot.style.left = `${5 + Math.random() * 90}%`;
+            dot.style.bottom = `${5 + Math.random() * 35}%`;
+            dot.style.animationDelay = `${Math.random() * 6}s`;
+            shrineBox.appendChild(dot);
+        }
+
+        function selectLocalPagoda(num) {
+            const imgEl = document.getElementById('bgImage');
+            const vidEl = document.getElementById('bgVideo');
+            vidEl.classList.add('hidden');
+            vidEl.pause();
+            imgEl.style.display = 'block';
+            imgEl.src = `bg${num}.jpg`;
+
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`sceneBtn${i}`);
+                if (btn) {
+                    btn.className = (i === num)
+                        ? 'scene-btn bg-amber-500 text-slate-950 font-bold py-1.5 px-1 rounded-lg text-[10px] border border-amber-300 flex flex-col items-center'
+                        : 'scene-btn bg-slate-900 hover:bg-slate-700 text-slate-200 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center';
+                }
+            }
+        }
+
+        function changeBackground(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            const imgEl = document.getElementById('bgImage');
+            const vidEl = document.getElementById('bgVideo');
+
+            if (file.type.startsWith('video/')) {
+                imgEl.style.display = 'none';
+                vidEl.src = url;
+                vidEl.classList.remove('hidden');
+                vidEl.play();
+            } else {
+                vidEl.classList.add('hidden');
+                imgEl.style.display = 'block';
+                imgEl.src = url;
+            }
+        }
+
+        // ပန်းလှူလျှင် ဘုရားစင်ပေါ်ရှိ ပန်းအိုး (၂) အိုးထဲတွင် ပန်းပွင့်များ တိုးပွားစေခြင်း + နှင်းဆီပွင့်ဖတ် ကြွေကျစေခြင်း
+        function addVisualFlowerOffering(count) {
+            const leftVase = document.getElementById('leftFlowerVase');
+            const rightVase = document.getElementById('rightFlowerVase');
+            const flowerIcons = ['🌹', '🌸', '🌺', '🪷'];
+
+            for (let i = 0; i < Math.min(count, 4); i++) {
+                const targetVase = (leftVase.children.length <= rightVase.children.length) ? leftVase : rightVase;
+                const sp = document.createElement('span');
+                sp.className = 'bloomed-flower';
+                sp.innerText = flowerIcons[Math.floor(Math.random() * flowerIcons.length)];
+                targetVase.appendChild(sp);
+                if (targetVase.children.length > 6) targetVase.removeChild(targetVase.firstChild);
+            }
+
+            // Screen အပေါ်မှ နှင်းဆီပန်းပွင့်ဖတ်လေးများ ကြွေကျစေခြင်း
+            const liveScreen = document.getElementById('liveScreen');
+            for (let j = 0; j < 7; j++) {
+                const petal = document.createElement('div');
+                petal.className = 'falling-petal';
+                petal.innerText = j % 2 === 0 ? '🌹' : '🌸';
+                petal.style.left = `${15 + Math.random() * 70}%`;
+                petal.style.animationDelay = `${j * 0.25}s`;
+                liveScreen.appendChild(petal);
+                setTimeout(() => petal.remove(), 3500);
+            }
+        }
+
+        // ဆီမီးပူဇော်လျှင် ဘုရားစင်အလယ်တန်းတွင် ဆီမီးတောက်များ ထွန်းညှိပေးခြင်း
+        function addVisualCandleOffering(count) {
+            const candleRow = document.getElementById('centerCandleRow');
+            for (let i = 0; i < Math.min(count, 4); i++) {
+                const c = document.createElement('span');
+                c.className = 'lit-candle';
+                c.innerText = '🕯️';
+                candleRow.appendChild(c);
+                if (candleRow.children.length > 7) candleRow.removeChild(candleRow.firstChild);
+            }
+        }
+
+        function pushTopGiftBanner(user, giftLabel, count, avatar, icon = '🌹') {
+            const container = document.getElementById('topBannersContainer');
+            const item = document.createElement('div');
+            item.className = 'gift-banner-item rounded-xl px-2.5 py-1.5 flex items-center gap-2 text-[11px]';
+            item.innerHTML = `
+                <span class="text-lg shrink-0">${icon}</span>
+                <div class="flex-1 text-center leading-tight text-amber-100">
+                    ${icon} <b class="text-amber-300">${user}</b> ${icon} မှ <b>${giftLabel} x${count}</b> ဖြင့် ကုသိုလ်ပြု ပူဇော်ပါသည် 🙏
+                </div>
+                <img src="${avatar}" class="w-6 h-6 rounded-full border border-amber-300 shrink-0 object-cover">
+            `;
+            container.appendChild(item);
+            while (container.children.length > 3) {
+                container.removeChild(container.firstChild);
+            }
+        }
+
+        const stage = document.getElementById('templeStage');
+        let actors = [];
+        const outfitColors = ['#581c87', '#9d174d', '#1e3a8a', '#065f46', '#78350f', '#312e81', '#115e59', '#6b21a8'];
+
+        const crowdSpots = [
+            { x: 13, y: 65 }, { x: 25, y: 64 }, { x: 36, y: 65 },
+            { x: 11, y: 73 }, { x: 23, y: 72 }, { x: 35, y: 73 },
+            { x: 12, y: 82 }, { x: 24, y: 81 }, { x: 36, y: 82 },
+            { x: 10, y: 90 }, { x: 23, y: 89 }, { x: 35, y: 90 },
+            { x: 64, y: 65 }, { x: 75, y: 64 }, { x: 87, y: 65 },
+            { x: 65, y: 73 }, { x: 77, y: 72 }, { x: 89, y: 73 },
+            { x: 64, y: 82 }, { x: 76, y: 81 }, { x: 88, y: 82 },
+            { x: 65, y: 90 }, { x: 77, y: 89 }, { x: 90, y: 90 }
+        ];
+
+        const starterNames = [
+            'ကိုသန့်', 'ဒေါ်ခင်', 'ဒေါ်စု', 'ဦးဘ', 'ဦးလှ', 'မချို',
+            'မမေ', 'မစန္ဒာ', 'ကိုကို', 'မမြင့်', 'ဦးကျော်', 'ဒေါ်မြ',
+            'မောင်မောင်', 'သီရိ', 'ကိုထက်', 'နန်းခမ်း', 'စိုင်းလင်း', 'မေမြတ်',
+            'ဦးဝင်း', 'ဒေါ်နု', 'ကိုဇော်', 'မဖြူ', 'အောင်အောင်', 'မိုးမိုး'
+        ];
+
+        function buildCharacterSVG(isStanding, isFemale, color) {
+            if (isStanding) {
+                return `
+                <svg width="28" height="52" viewBox="0 0 40 70" class="actor-sprite">
+                    <ellipse cx="20" cy="67" rx="10" ry="3" fill="rgba(0,0,0,0.65)"/>
+                    <circle cx="20" cy="11" r="6" fill="#171717"/>
+                    ${isFemale ? '<circle cx="20" cy="4" r="3" fill="#171717"/>' : ''}
+                    <path d="M13 18 Q20 15 27 18 L29 36 L11 36 Z" fill="#fffbeb"/>
+                    <path d="M14 21 L20 27 L26 21" stroke="#fed7aa" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    <rect x="12" y="36" width="16" height="26" rx="1.5" fill="${color}"/>
+                    <line x1="12" y1="44" x2="28" y2="44" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+                    <rect x="14" y="62" width="3.5" height="5" fill="#fed7aa"/>
+                    <rect x="22.5" y="62" width="3.5" height="5" fill="#fed7aa"/>
+                </svg>`;
+            }
+            return `
+            <svg width="34" height="36" viewBox="0 0 44 48" class="actor-sprite">
+                <ellipse cx="22" cy="44" rx="17" ry="4" fill="rgba(0,0,0,0.75)"/>
+                <circle cx="22" cy="11" r="6.5" fill="#171717"/>
+                ${isFemale ? '<circle cx="22" cy="4.5" r="3" fill="#171717"/>' : ''}
+                <path d="M13 21 Q22 17 31 21 L33 34 L11 34 Z" fill="#fffbeb"/>
+                <rect x="8" y="33" width="28" height="11" rx="5" fill="${color}"/>
+                <line x1="15" y1="33" x2="15" y2="44" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
+                <line x1="22" y1="33" x2="22" y2="44" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
+                <line x1="29" y1="33" x2="29" y2="44" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
+            </svg>`;
+        }
+
+        function renderActor(actor) {
+            if (!actor.el) {
+                const el = document.createElement('div');
+                el.className = 'person-actor';
+                stage.appendChild(el);
+                actor.el = el;
+            }
+            const isStanding = actor.state === 'walking' || actor.state === 'offering';
+            actor.el.className = `person-actor ${isStanding ? 'is-walking' : 'is-praying'}`;
+            actor.el.style.left = `${actor.x}%`;
+            actor.el.style.top = `${actor.y}%`;
+            actor.el.style.zIndex = actor.state === 'offering' ? 120 : Math.round(actor.y);
+
+            const scale = 0.65 + ((actor.y - 60) / 32) * 0.40;
+            actor.el.style.transform = `translate(-50%, -100%) scale(${Math.max(0.62, Math.min(1.06, scale))})`;
+
+            const pillStyle = actor.state === 'offering'
+                ? 'bg-pink-950/95 border-pink-400 text-amber-200 scale-105'
+                : 'bg-black/80 border-amber-400/45 text-amber-100';
+
+            actor.el.innerHTML = `
+                <div class="flex flex-col items-center relative">
+                    ${actor.state === 'offering' ? `
+                        <div class="flex items-center gap-0.5 text-sm font-extrabold text-amber-300 drop-shadow mb-0.5 animate-bounce bg-black/75 px-2 py-0.5 rounded-full border border-amber-400">
+                            <span>${actor.offeringEmoji || '🌹'}</span><span>x${actor.giftCount || 1}</span>
+                        </div>
+                    ` : ''}
+                    <div class="flex items-center gap-1 ${pillStyle} border rounded-full pl-0.5 pr-1.5 py-0.2 mb-0.5 shadow">
+                        <img src="${actor.avatar}" class="w-3 h-3 rounded-full object-cover">
+                        <span class="text-[8.5px] font-bold max-w-[44px] truncate">${actor.name}</span>
+                    </div>
+                    ${buildCharacterSVG(isStanding, actor.isFemale, actor.color)}
+                </div>
+            `;
+        }
+
+        function resetAll() {
+            stage.innerHTML = '';
+            actors = [];
+            flowers = 0;
+            candles = 0;
+            document.getElementById('flowerCount').innerText = '0';
+            document.getElementById('candleCount').innerText = '0';
+            document.getElementById('topBannersContainer').innerHTML = '';
+            document.getElementById('leftFlowerVase').innerHTML = '<span class="bloomed-flower">🌸</span>';
+            document.getElementById('rightFlowerVase').innerHTML = '<span class="bloomed-flower">🌸</span>';
+            document.getElementById('centerCandleRow').innerHTML = '<span class="lit-candle">🕯️</span>';
+
+            crowdSpots.forEach((spot, idx) => {
+                const name = starterNames[idx % starterNames.length];
+                const actor = {
+                    id: idx,
+                    name,
+                    avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                    isFemale: name.startsWith('မ') || name.startsWith('ဒေါ်') || idx % 2 === 1,
+                    color: outfitColors[idx % outfitColors.length],
+                    spotIndex: idx,
+                    x: spot.x,
+                    y: spot.y,
+                    state: 'praying',
+                    isRealViewer: false
+                };
+                actors.push(actor);
+                renderActor(actor);
+            });
+        }
+        resetAll();
+
+        setInterval(() => {
+            const p = actors[Math.floor(Math.random() * actors.length)];
+            if (!p || p.state !== 'praying') return;
+
+            p.state = 'walking';
+            p.x = 46 + Math.random() * 8;
+            p.y = 63 + Math.random() * 25;
+            renderActor(p);
+
+            setTimeout(() => {
+                if (p.state === 'walking') {
+                    const spot = crowdSpots[p.spotIndex];
+                    p.x = spot.x;
+                    p.y = spot.y;
+                    renderActor(p);
+                    setTimeout(() => {
+                        p.state = 'praying';
+                        renderActor(p);
+                    }, 2500);
+                }
+            }, 2600);
+        }, 3000);
+
+        function walkUpToAltarAndOffer(user, avatar, isGift, emoji = '🌹', count = 1) {
+            let actor = actors.find(a => a.name === user);
+            if (!actor) {
+                const slot = actors.find(a => !a.isRealViewer) || actors[Math.floor(Math.random() * actors.length)];
+                slot.name = user;
+                slot.avatar = avatar;
+                slot.isRealViewer = true;
+                slot.isFemale = user.startsWith('မ') || user.startsWith('ဒေါ်') || Math.random() > 0.5;
+                actor = slot;
+            } else {
+                actor.avatar = avatar;
+            }
+
+            if (isGift) {
+                actor.state = 'walking';
+                actor.offeringEmoji = emoji;
+                actor.giftCount = count;
+                actor.x = 50;
+                actor.y = 91;
+                renderActor(actor);
+
+                setTimeout(() => {
+                    actor.state = 'offering';
+                    actor.x = 47 + Math.random() * 6;
+                    actor.y = 61;
+                    renderActor(actor);
+                }, 300);
+
+                setTimeout(() => {
+                    const spot = crowdSpots[actor.spotIndex];
+                    actor.state = 'walking';
+                    actor.x = spot.x;
+                    actor.y = spot.y;
+                    renderActor(actor);
+
+                    setTimeout(() => {
+                        actor.state = 'praying';
+                        renderActor(actor);
+                    }, 2500);
+                }, 5200);
+            } else {
+                actor.state = 'walking';
+                actor.x = 50;
+                actor.y = 90;
+                renderActor(actor);
+                setTimeout(() => {
+                    const spot = crowdSpots[actor.spotIndex];
+                    actor.x = spot.x;
+                    actor.y = spot.y;
+                    renderActor(actor);
+                    setTimeout(() => {
+                        actor.state = 'praying';
+                        renderActor(actor);
+                    }, 2500);
+                }, 300);
+            }
+        }
+
+        // AUDIO & TIKTOK CONNECTION
+        let audioCtx = null, bgInterval = null, activeOscillators = [], masterGain = null, currentVolume = 0.5;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = currentVolume;
+                masterGain.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function stopAllAudio() {
+            if (bgInterval) clearInterval(bgInterval);
+            activeOscillators.forEach(osc => { try { osc.stop(); } catch (e) {} });
+            activeOscillators = [];
+            document.getElementById('customAudioPlayer').pause();
+            document.querySelectorAll('.aud-btn').forEach(b => {
+                b.className = 'aud-btn bg-slate-900 hover:bg-slate-700 py-1.5 px-1 rounded-lg text-[10px] border border-slate-600 flex flex-col items-center';
+            });
+        }
+
+        function updateVolume(val) {
+            currentVolume = parseFloat(val);
+            if (masterGain) masterGain.gain.value = currentVolume;
+            document.getElementById('customAudioPlayer').volume = currentVolume;
+        }
+
+        function playPresetAudio(type) {
+            stopAllAudio();
+            initAudioContext();
+            const btn = document.getElementById('audBtn' + type);
+            if (btn) btn.className = 'aud-btn bg-emerald-600 text-white font-bold py-1.5 px-1 rounded-lg text-[10px] border border-emerald-300 flex flex-col items-center';
+
+            if (type === 1) {
+                const ring = () => {
+                    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(784, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.2);
+                    osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 2.2);
+                };
+                ring(); bgInterval = setInterval(ring, 2800);
+            } else if (type === 2) {
+                [261.63, 329.63, 392.00].forEach(freq => {
+                    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.type = 'triangle'; osc.frequency.value = freq; gain.gain.value = 0.12;
+                    osc.connect(gain); gain.connect(masterGain); osc.start(); activeOscillators.push(osc);
+                });
+            } else if (type === 3) {
+                const bufferSize = 2 * audioCtx.sampleRate, noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                const whiteNoise = audioCtx.createBufferSource(); whiteNoise.buffer = noiseBuffer; whiteNoise.loop = true;
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 380;
+                const gain = audioCtx.createGain(); gain.gain.value = 0.35;
+                whiteNoise.connect(filter); filter.connect(gain); gain.connect(masterGain); whiteNoise.start();
+                activeOscillators.push(whiteNoise);
+            } else if (type === 4) {
+                const notes = [293.66, 329.63, 392.00, 440.00, 523.25, 440.00, 392.00]; let step = 0;
+                const pluck = () => {
+                    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.value = notes[step % notes.length];
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+                    osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 1.2); step++;
+                };
+                pluck(); bgInterval = setInterval(pluck, 900);
+            } else if (type === 5) {
+                [130.81, 196.00, 261.63].forEach(freq => {
+                    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.value = freq; gain.gain.value = 0.18;
+                    osc.connect(gain); gain.connect(masterGain); osc.start(); activeOscillators.push(osc);
+                });
+            }
+        }
+
+        function uploadCustomAudio(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            stopAllAudio();
+            const player = document.getElementById('customAudioPlayer');
+            player.src = URL.createObjectURL(file);
+            player.classList.remove('hidden');
+            player.volume = currentVolume;
+            player.play();
+        }
+
+        function connectTikTok() {
+            if (!socket) return alert('Address Bar တွင် http://localhost:3000 မှတစ်ဆင့် ဖွင့်ပါ။');
+            const username = document.getElementById('usernameInput').value;
+            if (!username) return alert('TikTok Username အရင်ထည့်ပါ');
+            document.getElementById('statusText').innerText = 'ချိတ်ဆက်နေပါသည်...';
+            socket.emit('connect-tiktok', username);
+        }
+
+        if (socket) {
+            socket.on('status', (data) => {
+                const statusEl = document.getElementById('statusText');
+                statusEl.innerText = data.message;
+                statusEl.className = data.connected ? 'text-[11px] mt-1 text-emerald-400' : 'text-[11px] mt-1 text-rose-400';
+            });
+            socket.on('tiktok-gift', (data) => handleGift(data.user, data.giftName, data.giftCount, data.avatar));
+            socket.on('tiktok-chat', (data) => handleChat(data.user, data.comment, data.avatar));
+            socket.on('tiktok-like', (data) => walkUpToAltarAndOffer(data.user, 'https://cdn-icons-png.flaticon.com/512/149/149071.png', false));
+        }
+
+        function handleGift(user, giftName, count, avatar = 'https://cdn-icons-png.flaticon.com/512/149/149071.png') {
+            const isRose = giftName.toLowerCase().includes('rose');
+            const emoji = isRose ? '🌹' : '🕯️';
+            const label = isRose ? 'နှင်းဆီပန်း' : 'ဆီမီးကုသိုလ်';
+
+            if (isRose) {
+                flowers += count;
+                document.getElementById('flowerCount').innerText = flowers;
+                addVisualFlowerOffering(count);
+            } else {
+                candles += count;
+                document.getElementById('candleCount').innerText = candles;
+                addVisualCandleOffering(count);
+            }
+
+            pushTopGiftBanner(user, label, count, avatar, emoji);
+            walkUpToAltarAndOffer(user, avatar, true, emoji, count);
+        }
+
+        function handleChat(user, comment, avatar = 'https://cdn-icons-png.flaticon.com/512/149/149071.png') {
+            walkUpToAltarAndOffer(user, avatar, false);
+        }
+
+        const testList = ['အောင်အောင်', 'မသီတာ', 'ဦးဝင်း', 'ဒေါ်နု', 'ကိုထက်', 'မေမြတ်', 'စိုင်းလင်း', 'နန်းခမ်း'];
+        function simulateGift(defUser, gift, count) {
+            const u = testList[Math.floor(Math.random() * testList.length)];
+            handleGift(u, gift, count);
+        }
+        function simulateChat(defUser, msg) {
+            const u = testList[Math.floor(Math.random() * testList.length)];
+            handleChat(u, msg);
+        }
+    </script>
+</body>
+</html>
