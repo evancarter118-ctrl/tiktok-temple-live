@@ -2,7 +2,7 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <title>TikTok Interactive Live Studio - V11 (Living Shrine & Visible Offerings)</title>
+    <title>TikTok Interactive Live Studio - V12 (Complete Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -215,7 +215,7 @@
 
         <!-- 2. ဘုရားစင် ရွှေပလ္လင်ဘောင် (ပန်းလှူ/ဆီမီးပူဇော်မှုများ အထင်အရှား မြင်ရမည့် စင်တန်း) -->
         <div class="shrine-ledge flex items-center justify-between px-2">
-            <!-- ဘယ်ဘက် ပန်းအိုးစင် (Rose ပို့လေ ပန်းပွင့်များ တိုးပွားလာမည်) -->
+            <!-- ဘယ်ဘက် ပန်းအိုးစင် -->
             <div class="flex items-center bg-black/45 px-1.5 py-0.5 rounded-full border border-pink-400/50">
                 <span class="text-sm mr-0.5">🏺</span>
                 <div id="leftFlowerVase" class="flex -space-x-1 text-sm">
@@ -223,7 +223,7 @@
                 </div>
             </div>
 
-            <!-- အလယ် ဆီမီးခုံတန်း (Gift ပို့လေ ဆီမီးတောက်များ လင်းထိန်လာမည်) -->
+            <!-- အလယ် ဆီမီးခုံတန်း -->
             <div id="centerCandleRow" class="flex items-center justify-center gap-0.5 bg-black/50 px-2 py-0.5 rounded-full border border-amber-300/60 min-w-[95px] text-sm">
                 <span class="lit-candle">🕯️</span>
             </div>
@@ -257,10 +257,20 @@
         <!-- 5. ကြမ်းပြင်ပေါ်တွင် ထိုင်/လျှောက် ပူဇော်နေသည့် လူများ -->
         <div id="templeStage" class="absolute inset-0 z-20 pointer-events-none"></div>
 
-        <!-- 6. အောက်ခြေ ကုသိုလ်ပြ ဘားတန်း -->
-        <div class="relative z-30 px-3 pb-2 flex justify-between items-center text-[10px] text-amber-100 pointer-events-none">
-            <span class="bg-black/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-400/40">🌹 ပန်းလှူ: <b id="flowerCount" class="text-pink-300">0</b></span>
-            <span class="bg-black/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-400/40">🕯️ ဆီမီး: <b id="candleCount" class="text-amber-300">0</b></span>
+        <!-- 6. အောက်ခြေ: Gift လမ်းညွှန်စာတန်း နှင့် စုစုပေါင်း ကုသိုလ်ပြ ဘားတန်း -->
+        <div class="relative z-30 px-2.5 pb-2 space-y-1.5 pointer-events-none">
+            <!-- Gift Guide Overlay Bar -->
+            <div class="bg-black/75 backdrop-blur-md border border-amber-400/50 rounded-xl px-2 py-1 text-[9.5px] text-amber-100 shadow-lg">
+                <div id="displayGuideText" class="text-center font-bold tracking-tight">
+                    🌹 Rose = ပန်းလှူ &nbsp;|&nbsp; 🎁 Gift = ဆီမီးပူဇော် &nbsp;|&nbsp; 💬/❤️ = ထိုင်ဖူးမြော်
+                </div>
+            </div>
+
+            <!-- ကုသိုလ်အရေအတွက်ပြ ဘားတန်း -->
+            <div class="flex justify-between items-center text-[10px] text-amber-100 px-0.5">
+                <span class="bg-black/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-400/40">🌹 ပန်းလှူ: <b id="flowerCount" class="text-pink-300">0</b></span>
+                <span class="bg-black/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-400/40">🕯️ ဆီမီး: <b id="candleCount" class="text-amber-300">0</b></span>
+            </div>
         </div>
     </div>
 
@@ -268,7 +278,7 @@
     <div class="w-full max-w-md bg-slate-800/95 backdrop-blur-lg p-5 rounded-2xl border border-slate-700 space-y-3.5 max-h-[95vh] overflow-y-auto">
         <h2 class="text-base font-bold text-amber-400 flex items-center justify-between">
             <span>⚙️ Live Control & Settings</span>
-            <span class="text-[11px] text-emerald-400 font-normal">V11 Living Shrine</span>
+            <span class="text-[11px] text-emerald-400 font-normal">V12 Complete</span>
         </h2>
         
         <!-- 1. TikTok Connect -->
@@ -283,7 +293,7 @@
 
         <hr class="border-slate-700">
 
-        <!-- 2. Pagoda Photos & Animation Speed -->
+        <!-- 2. Pagoda Photos & Upload -->
         <div>
             <label class="block text-xs text-amber-300 font-bold mb-1.5">၂။ ဘုရား/စေတီ ဓာတ်ပုံအစစ် (၅) မျိုး (bg1.jpg ~ bg5.jpg)</label>
             <div class="grid grid-cols-5 gap-1.5">
@@ -303,7 +313,7 @@
                     <span class="text-sm">🕯️</span><span>ပုံ (၅)</span>
                 </button>
             </div>
-            <label class="block text-[11px] text-slate-300 mt-2 mb-1">သို့မဟုတ် ကိုယ့်ကွန်ပျူတာထဲမှ ဘုရားဓာတ်ပုံ/ဗီဒီယို တိုက်ရိုက်ရွေးထည့်ရန်</label>
+            <label class="block text-[11px] text-slate-300 mt-2 mb-1">သို့မဟုတ် ဖုန်း/ကွန်ပျူတာထဲမှ ဘုရားဓာတ်ပုံ/ဗီဒီယို တိုက်ရိုက်ရွေးထည့်ရန်</label>
             <input type="file" id="bgUpload" accept="image/*,video/*" onchange="changeBackground(event)" class="w-full text-[11px] text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-purple-600 file:text-white bg-slate-900 rounded border border-slate-700 p-1">
         </div>
 
@@ -335,7 +345,7 @@
             </div>
 
             <div>
-                <label class="block text-[11px] text-slate-300 mb-1">သို့မဟုတ် အပြင်က တရားတော်/MP3 အသံဖိုင် ထည့်ဖွင့်ရန်</label>
+                <label class="block text-[11px] text-slate-300 mb-1">သို့မဟုတ် အပြင်က တရားတော်/MP3 အသံဖိုင် ထည့်ဖွင့်ရန် (Auto Loop)</label>
                 <input type="file" id="audioUpload" accept="audio/*" onchange="uploadCustomAudio(event)" class="w-full text-[11px] text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-emerald-600 file:text-white bg-slate-900 rounded border border-slate-700 p-1">
                 <audio id="customAudioPlayer" controls loop class="w-full h-8 mt-1.5 hidden"></audio>
             </div>
@@ -348,12 +358,19 @@
 
         <hr class="border-slate-700">
 
-        <!-- 4. Custom Title & Test Mode -->
-        <div>
-            <label class="block text-xs text-slate-300 mb-1">၄။ ခေါင်းစဉ် ပြောင်းရန်</label>
-            <input type="text" id="titleInput" value="🙏 မနက်ခင်းတရားတော် 🙏" oninput="document.getElementById('displayTitle').innerText = this.value" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-sm">
+        <!-- 4. Custom Title & Gift Guide Text -->
+        <div class="space-y-2">
+            <div>
+                <label class="block text-xs text-slate-300 mb-1">၄။ ခေါင်းစဉ် ပြောင်းရန်</label>
+                <input type="text" id="titleInput" value="🙏 မနက်ခင်းတရားတော် 🙏" oninput="document.getElementById('displayTitle').innerText = this.value" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-300 mb-1">၅။ Gift လမ်းညွှန်စာတန်း ပြင်ရန်</label>
+                <input type="text" id="guideInput" value="🌹 Rose = ပန်းလှူ  |  🎁 Gift = ဆီမီးပူဇော်  |  💬/❤️ = ထိုင်ဖူးမြော်" oninput="document.getElementById('displayGuideText').innerText = this.value" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-1.5 text-xs">
+            </div>
         </div>
 
+        <!-- 5. Test Mode -->
         <div>
             <div class="flex justify-between items-center mb-1.5">
                 <label class="text-xs text-slate-300">🧪 စမ်းသပ်ခလုတ်များ (ပန်းလှူ/ဆီမီးပူဇော်ပုံ စမ်းရန်)</label>
@@ -420,7 +437,6 @@
             }
         }
 
-        // ပန်းလှူလျှင် ဘုရားစင်ပေါ်ရှိ ပန်းအိုး (၂) အိုးထဲတွင် ပန်းပွင့်များ တိုးပွားစေခြင်း + နှင်းဆီပွင့်ဖတ် ကြွေကျစေခြင်း
         function addVisualFlowerOffering(count) {
             const leftVase = document.getElementById('leftFlowerVase');
             const rightVase = document.getElementById('rightFlowerVase');
@@ -435,7 +451,6 @@
                 if (targetVase.children.length > 6) targetVase.removeChild(targetVase.firstChild);
             }
 
-            // Screen အပေါ်မှ နှင်းဆီပန်းပွင့်ဖတ်လေးများ ကြွေကျစေခြင်း
             const liveScreen = document.getElementById('liveScreen');
             for (let j = 0; j < 7; j++) {
                 const petal = document.createElement('div');
@@ -448,7 +463,6 @@
             }
         }
 
-        // ဆီမီးပူဇော်လျှင် ဘုရားစင်အလယ်တန်းတွင် ဆီမီးတောက်များ ထွန်းညှိပေးခြင်း
         function addVisualCandleOffering(count) {
             const candleRow = document.getElementById('centerCandleRow');
             for (let i = 0; i < Math.min(count, 4); i++) {
@@ -482,14 +496,14 @@
         const outfitColors = ['#581c87', '#9d174d', '#1e3a8a', '#065f46', '#78350f', '#312e81', '#115e59', '#6b21a8'];
 
         const crowdSpots = [
-            { x: 13, y: 65 }, { x: 25, y: 64 }, { x: 36, y: 65 },
-            { x: 11, y: 73 }, { x: 23, y: 72 }, { x: 35, y: 73 },
-            { x: 12, y: 82 }, { x: 24, y: 81 }, { x: 36, y: 82 },
-            { x: 10, y: 90 }, { x: 23, y: 89 }, { x: 35, y: 90 },
-            { x: 64, y: 65 }, { x: 75, y: 64 }, { x: 87, y: 65 },
-            { x: 65, y: 73 }, { x: 77, y: 72 }, { x: 89, y: 73 },
-            { x: 64, y: 82 }, { x: 76, y: 81 }, { x: 88, y: 82 },
-            { x: 65, y: 90 }, { x: 77, y: 89 }, { x: 90, y: 90 }
+            { x: 13, y: 64 }, { x: 25, y: 63 }, { x: 36, y: 64 },
+            { x: 11, y: 71.5 }, { x: 23, y: 70.5 }, { x: 35, y: 71.5 },
+            { x: 12, y: 79.5 }, { x: 24, y: 78.5 }, { x: 36, y: 79.5 },
+            { x: 10, y: 87 }, { x: 23, y: 86 }, { x: 35, y: 87 },
+            { x: 64, y: 64 }, { x: 75, y: 63 }, { x: 87, y: 64 },
+            { x: 65, y: 71.5 }, { x: 77, y: 70.5 }, { x: 89, y: 71.5 },
+            { x: 64, y: 79.5 }, { x: 76, y: 78.5 }, { x: 88, y: 79.5 },
+            { x: 65, y: 87 }, { x: 77, y: 86 }, { x: 90, y: 87 }
         ];
 
         const starterNames = [
@@ -540,8 +554,8 @@
             actor.el.style.top = `${actor.y}%`;
             actor.el.style.zIndex = actor.state === 'offering' ? 120 : Math.round(actor.y);
 
-            const scale = 0.65 + ((actor.y - 60) / 32) * 0.40;
-            actor.el.style.transform = `translate(-50%, -100%) scale(${Math.max(0.62, Math.min(1.06, scale))})`;
+            const scale = 0.65 + ((actor.y - 60) / 32) * 0.38;
+            actor.el.style.transform = `translate(-50%, -100%) scale(${Math.max(0.62, Math.min(1.04, scale))})`;
 
             const pillStyle = actor.state === 'offering'
                 ? 'bg-pink-950/95 border-pink-400 text-amber-200 scale-105'
@@ -601,7 +615,7 @@
 
             p.state = 'walking';
             p.x = 46 + Math.random() * 8;
-            p.y = 63 + Math.random() * 25;
+            p.y = 63 + Math.random() * 23;
             renderActor(p);
 
             setTimeout(() => {
@@ -636,7 +650,7 @@
                 actor.offeringEmoji = emoji;
                 actor.giftCount = count;
                 actor.x = 50;
-                actor.y = 91;
+                actor.y = 87;
                 renderActor(actor);
 
                 setTimeout(() => {
@@ -661,7 +675,7 @@
             } else {
                 actor.state = 'walking';
                 actor.x = 50;
-                actor.y = 90;
+                actor.y = 86;
                 renderActor(actor);
                 setTimeout(() => {
                     const spot = crowdSpots[actor.spotIndex];
@@ -766,7 +780,7 @@
         }
 
         function connectTikTok() {
-            if (!socket) return alert('Address Bar တွင် http://localhost:3000 မှတစ်ဆင့် ဖွင့်ပါ။');
+            if (!socket) return alert('Address Bar တွင် http://localhost:3000 (သို့) Render URL မှတစ်ဆင့် ဖွင့်ပါ။');
             const username = document.getElementById('usernameInput').value;
             if (!username) return alert('TikTok Username အရင်ထည့်ပါ');
             document.getElementById('statusText').innerText = 'ချိတ်ဆက်နေပါသည်...';
